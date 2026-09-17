@@ -109,10 +109,12 @@ class DigitalTwin:
             max_step=5.0
         )
 
-
 if __name__ == "__main__":
     twin = DigitalTwin()
     result = twin.run()
+    print("Healthy:", result.y[:, -1])
 
-    print("Success:", result.success)
-    print("Final state:", result.y[:, -1])
+    hf = DigitalTwin()
+    hf.scenario = "heart_failure"
+    result_hf = hf.run()
+    print("Heart failure:", result_hf.y[:, -1])
