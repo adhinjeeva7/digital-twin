@@ -36,4 +36,4 @@ if __name__ == "__main__":
         ("heart_failure", run_heart_failure),
     ]:
         twin, result = runner()
-        print(name, "final state:", result.y[:, -1])
+        print(name, "final state:", result.y[:  , -1])
