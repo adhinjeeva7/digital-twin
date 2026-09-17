@@ -108,13 +108,25 @@ class DigitalTwin:
             atol=1e-8,
             max_step=5.0
         )
+    def show_results(self, result):
+        names = [
+            "MAP",
+            "CVP",
+            "Pulmonary pressure",
+            "Pulmonary venous pressure",
+            "Extra fluid",
+            "PaO2"
+        ]
+
+        final_values = result.y[:, -1]
+
+        print("Simulation success:", result.success)
+
+        for name, value in zip(names, final_values):
+            print(name, "=", round(value, 2))
+
 
 if __name__ == "__main__":
     twin = DigitalTwin()
     result = twin.run()
-    print("Healthy:", result.y[:, -1])
-
-    hf = DigitalTwin()
-    hf.scenario = "heart_failure"
-    result_hf = hf.run()
-    print("Heart failure:", result_hf.y[:, -1])
+    twin.show_results(result)
