@@ -7,7 +7,7 @@ SCENARIO_RUNNERS = {
     "fluid_overload": run_fluid_overload,
     "heart_failure": run_heart_failure,
 }
-
+app = Flask(__name__)
 @app.route("/scenario")
 def scenario():
     name = request.args.get("name", "healthy")
