@@ -8,6 +8,14 @@ SCENARIO_RUNNERS = {
     "heart_failure": run_heart_failure,
 }
 app = Flask(__name__)
+
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return response
+
+
 @app.route("/scenario")
 def scenario():
     name = request.args.get("name", "healthy")
@@ -24,10 +32,9 @@ def scenario():
         "GFR": round(twin.kidney.gfr(P_sa), 1),
         "Vextra": round(V_extra, 1)
     })
-app=Flask(__name__)
 @app.route("/simulate")
 def simulate():
-    pct = float(request.args)
+    pct = float(request.args.get("pct", 100))
     twin = DigitalTwin()
     twin.heart.sv_baseline = 70.0 * pct / 100.0
     twin.heart.k_fs_lv = 0.60 - 0.35 * (1 - pct / 100.0)
