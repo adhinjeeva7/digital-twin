@@ -1,0 +1,117 @@
+<html>
+<head>
+  <title>Cardiac Digital Twin — Live Demo</title>
+  <style>
+    body { font-family: sans-serif; max-width: 900px; margin: 40px auto; }
+    input[type=range] { width: 100%; }
+    table { border-collapse: collapse; margin-top: 16px; width: 100%; }
+    td, th { border: 1px solid #ccc; padding: 8px 12px; text-align: center; }
+    th { background: #f0f0f0; }
+    .heart  { color: #b91c1c; font-weight: bold; }
+    .kidney { color: #1d4ed8; font-weight: bold; }
+    .lung   { color: #047857; font-weight: bold; }
+    #pctLabel { font-size: 20px; font-weight: bold; }
+    #status { font-size: 13px; color: #888; margin-top: 6px; }
+    .section { margin-top: 36px; padding-top: 16px; border-top: 1px solid #ddd; }
+    button { font-size: 15px; padding: 8px 14px; margin-right: 8px; cursor: pointer; }
+    button.active { background: #1d4ed8; color: white; border: none; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Cardiac Digital Twin — Live Demo</h1>
+  <div id="status">ready</div>
+
+  <table>
+    <tr>
+      <th></th><th>MAP</th><th>CVP</th><th>mPAP</th><th>PCWP</th>
+      <th>PaO2</th><th>SaO2</th><th>HR</th><th>GFR</th><th>&Delta;Volume</th>
+    </tr>
+    <tr>
+      <td><b>Value</b></td>
+      <td class="heart" id="v_MAP">-</td>
+      <td class="heart" id="v_CVP">-</td>
+      <td class="lung" id="v_mPAP">-</td>
+      <td class="lung" id="v_PCWP">-</td>
+      <td class="lung" id="v_PaO2">-</td>
+      <td class="lung" id="v_SaO2">-</td>
+      <td class="heart" id="v_HR">-</td>
+      <td class="kidney" id="v_GFR">-</td>
+      <td class="kidney" id="v_Vextra">-</td>
+    </tr>
+  </table>
+
+  <div class="section">
+    <h2>1. Continuous heart strength</h2>
+    <p>Drag to weaken the heart gradually — GFR, PaO2, and SaO2 respond even
+       though only the heart is being changed. Uses <code>/simulate</code>.</p>
+    <label>Heart stroke volume: <span id="pctLabel">100%</span> of normal</label>
+    <input type="range" id="heartSlider" min="40" max="100" step="10" value="100"
+           oninput="runSlider()">
+  </div>
+
+  <div class="section">
+    <h2>2. Named disease scenarios</h2>
+    <p>Each button runs your actual <code>scenarios.py</code> function — the
+       same three cases in your thesis. Uses <code>/scenario</code>.</p>
+    <button id="btn_healthy" onclick="runScenario('healthy')">Healthy</button>
+    <button id="btn_hypoxia" onclick="runScenario('hypoxia')">Acute Hypoxia</button>
+    <button id="btn_fluid_overload" onclick="runScenario('fluid_overload')">IV Fluid Overload</button>
+    <button id="btn_heart_failure" onclick="runScenario('heart_failure')">Left Heart Failure</button>
+  </div>
+
+  <script>
+    const SERVER_URL = "http://localhost:5000";
+
+    function setStatus(msg) {
+      document.getElementById("status").innerText = msg;
+    }
+
+    function fillTable(s) {
+      document.getElementById("v_MAP").innerText = s.MAP;
+      document.getElementById("v_CVP").innerText = s.CVP;
+      document.getElementById("v_mPAP").innerText = s.mPAP;
+      document.getElementById("v_PCWP").innerText = s.PCWP;
+      document.getElementById("v_PaO2").innerText = s.PaO2;
+      document.getElementById("v_SaO2").innerText = s.SaO2;
+      document.getElementById("v_HR").innerText = s.HR;
+      document.getElementById("v_GFR").innerText = s.GFR;
+      document.getElementById("v_Vextra").innerText = s.Vextra;
+    }
+
+    function clearActiveButtons() {
+      document.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+    }
+
+    async function runSlider() {
+      const pct = document.getElementById("heartSlider").value;
+      document.getElementById("pctLabel").innerText = pct + "%";
+      clearActiveButtons();
+      setStatus("running live simulation (slider, " + pct + "%)...");
+
+      try {
+        const res = await fetch(`${SERVER_URL}/simulate?pct=${pct}`);
+        fillTable(await res.json());
+        setStatus("done - live result from /simulate");
+      } catch (err) {
+        setStatus("could not reach server - is 'python server.py' running?");
+      }
+    }
+
+    async function runScenario(name) {
+      clearActiveButtons();
+      document.getElementById("btn_" + name).classList.add("active");
+      setStatus("running live simulation (" + name + ")...");
+
+      try {
+        const res = await fetch(`${SERVER_URL}/scenario?name=${name}`);
+        fillTable(await res.json());
+        setStatus("done - live result from /scenario");
+      } catch (err) {
+        setStatus("could not reach server - is 'python server.py' running?");
+      }
+    }
+
+    runScenario('healthy'); 
+  </script>
+</body>
+</html>
