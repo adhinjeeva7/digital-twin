@@ -1,5 +1,29 @@
 from flask import Flask, request, jsonify
 from twin import DigitalTwin
+from scenarios import run_healthy, run_hypoxia, run_fluid_overload, run_heart_failure
+SCENARIO_RUNNERS = {
+    "healthy": run_healthy,
+    "hypoxia": run_hypoxia,
+    "fluid_overload": run_fluid_overload,
+    "heart_failure": run_heart_failure,
+}
+
+@app.route("/scenario")
+def scenario():
+    name = request.args.get("name", "healthy")
+    runner = SCENARIO_RUNNERS.get(name, run_healthy)
+
+    twin, result = runner()
+    P_sa, P_sv, P_pa, P_pv, V_extra, PaO2 = result.y[:, -1]
+
+    return jsonify({
+        "MAP": round(P_sa, 1), "CVP": round(P_sv, 2),
+        "mPAP": round(P_pa, 1), "PCWP": round(P_pv, 2),
+        "PaO2": round(PaO2, 1), "SaO2": round(twin.lung.SaO2(PaO2), 1),
+        "HR": round(twin.heart.heart_rate(P_sa), 1),
+        "GFR": round(twin.kidney.gfr(P_sa), 1),
+        "Vextra": round(V_extra, 1)
+    })
 app=Flask(__name__)
 @app.route("/simulate")
 def simulate():
