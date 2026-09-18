@@ -1,5 +1,3 @@
-import numpy as np
-
 class Lung:
     def __init__(self):
         self.r_pul_base = 0.08
