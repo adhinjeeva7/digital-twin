@@ -41,7 +41,7 @@ class DigitalTwin:
             self.heart.sv_baseline = sv
             self.heart.k_fs_lv = k_lv
             self.heart.k_fs_rv = k_rv
-                                   
+
     def rhs(self, t, y):
 
         P_sa, P_sv, P_pa, P_pv, V_extra, PaO2 = y
@@ -97,66 +97,63 @@ class DigitalTwin:
         ]
 
     def run(self, t_end=1800, dt=2.0):
-        times = np.arange(0, t_end + dt, dt)
+            times = np.arange(0, t_end + dt, dt)
 
-        def run(self, t_end=1800, dt=2.0):
-    times = np.arange(0, t_end + dt, dt)
+        options = {
+            "method": "RK45",
+            "rtol": 1e-6,
+            "atol": 1e-8,
+            "max_step": 5.0,
+        }
 
-    options = {
-        "method": "RK45",
-        "rtol": 1e-6,
-        "atol": 1e-8,
-        "max_step": 5.0,
-    }
+        if t_end <= self.onset_s:
+            return solve_ivp(
+                self.rhs,
+                [0, t_end],
+                self.y0,
+                t_eval=times,
+                **options,
+            )
 
-    if t_end <= self.onset_s:
-        return solve_ivp(
+        pre_times = times[times <= self.onset_s]
+        post_times = times[times >= self.onset_s]
+
+        baseline = solve_ivp(
             self.rhs,
-            [0, t_end],
+            [0, self.onset_s],
             self.y0,
-            t_eval=times,
+            t_eval=pre_times,
             **options,
         )
 
-    pre_times = times[times <= self.onset_s]
-    post_times = times[times >= self.onset_s]
+        if not baseline.success:
+            return baseline
 
-    baseline = solve_ivp(
-        self.rhs,
-        [0, self.onset_s],
-        self.y0,
-        t_eval=pre_times,
-        **options,
-    )
+        if self.scenario is not None:
+            self.apply_scenario()
 
-    if not baseline.success:
-        return baseline
+        scenario = solve_ivp(
+            self.rhs,
+            [self.onset_s, t_end],
+            baseline.y[:, -1],
+            t_eval=post_times,
+            **options,
+        )
 
-    if self.scenario is not None:
-        self.apply_scenario()
+        scenario.t = np.concatenate([
+            baseline.t,
+            scenario.t[1:],
+        ])
 
-    scenario = solve_ivp(
-        self.rhs,
-        [self.onset_s, t_end],
-        baseline.y[:, -1],
-        t_eval=post_times,
-        **options,
-    )
+        scenario.y = np.concatenate([
+            baseline.y,
+            scenario.y[:, 1:],
+        ], axis=1)
 
-    scenario.t = np.concatenate([
-        baseline.t,
-        scenario.t[1:],
-    ])
+        scenario.nfev += baseline.nfev
+        scenario.success = baseline.success and scenario.success
 
-    scenario.y = np.concatenate([
-        baseline.y,
-        scenario.y[:, 1:],
-    ], axis=1)
-
-    scenario.nfev += baseline.nfev
-    scenario.success = baseline.success and scenario.success
-
-    return scenario
+        return scenario
 
     def show_results(self, result):
         names = [
