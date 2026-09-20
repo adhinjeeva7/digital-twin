@@ -29,7 +29,7 @@ class DigitalTwin:
             return 38.5, 0.25, 0.25
 
         return 70.0, 0.60, 0.60
-    def apply_scenario(self, t):
+    def apply_scenario(self):
         if self.scenario == "hypoxia":
             self.fio2 = 0.10
 
@@ -96,8 +96,8 @@ class DigitalTwin:
             dPaO2
         ]
 
-    def run(self, t_end=1800, dt=2.0):
-            times = np.arange(0, t_end + dt, dt)
+     def run(self, t_end=1800, dt=2.0):
+        times = np.arange(0, t_end + dt, dt)
 
         options = {
             "method": "RK45",
@@ -155,14 +155,14 @@ class DigitalTwin:
 
         return scenario
 
-    def show_results(self, result):
+     def show_results(self, result):
         names = [
             "MAP",
             "CVP",
             "Pulmonary pressure",
             "Pulmonary venous pressure",
             "Extra fluid",
-            "PaO2"
+            "PaO2",
         ]
 
         final_values = result.y[:, -1]
