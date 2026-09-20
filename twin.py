@@ -96,7 +96,7 @@ class DigitalTwin:
             dPaO2
         ]
 
-    def n(self, t_end=1800, dt=2.0):
+    def run(self, t_end=1800, dt=2.0):
         times = np.arange(0, t_end + dt, dt)
 
         options = {
