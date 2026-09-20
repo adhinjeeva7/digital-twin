@@ -9,27 +9,53 @@ def derive(twin, result):
     P_sa, P_sv, P_pa, P_pv, V_extra, PaO2 = result.y
     n = len(t)
     out = {
-        'P_sa': P_sa,
-        'P_sv': P_sv,
-        'P_pa': P_pa,
-        'P_pv': P_pv,
-        'V_extra': V_extra,
-        'PaO2': PaO2,
-        'HR': np.zeros(n),
-        'CO_lv': np.zeros(n),
-        'GFR': np.zeros(n),
-        'SaO2': np.zeros(n),
+        "P_sa": P_sa,
+        "P_sv": P_sv,
+        "P_pa": P_pa,
+        "P_pv": P_pv,
+        "V_extra": V_extra,
+        "PaO2": PaO2,
+        "HR": np.zeros(n),
+        "CO_lv": np.zeros(n),
+        "GFR": np.zeros(n),
+        "SaO2": np.zeros(n),
     }
-    for i in range(n):
-        P_sv_eff = P_sv[i] + V_extra[i] / twin.c_sv
-        co_lv, co_rv, hr = twin.heart.outputs(P_pv[i], P_sv_eff, P_sa[i], P_pa[i])
-        out['HR'][i] = hr
-        out['CO_lv'][i] = co_lv * 60.0 / 1000.0   # mL/s -> L/min
-        out['GFR'][i] = twin.kidney.gfr(P_sa[i])
-        out['SaO2'][i] = twin.lung.SaO2(PaO2[i])
+    original_heart_parameters = (
+        twin.heart.sv_baseline,
+        twin.heart.k_fs_lv,
+        twin.heart.k_fs_rv,
+    )
+
+    try:
+        for i in range(n):
+            sv, k_lv, k_rv = twin.heart_parameters_at(t[i])
+
+            twin.heart.sv_baseline = sv
+            twin.heart.k_fs_lv = k_lv
+            twin.heart.k_fs_rv = k_rv
+
+            P_sv_eff = P_sv[i] + V_extra[i] / twin.c_sv
+
+            co_lv, _, hr = twin.heart.outputs(
+                P_pv[i],
+                P_sv_eff,
+                P_sa[i],
+                P_pa[i],
+            )
+
+            out["HR"][i] = hr
+            out["CO_lv"][i] = co_lv * 60.0 / 1000.0
+            out["GFR"][i] = twin.kidney.gfr(P_sa[i])
+            out["SaO2"][i] = twin.lung.SaO2(PaO2[i])
+
+    finally:
+        (
+            twin.heart.sv_baseline,
+            twin.heart.k_fs_lv,
+            twin.heart.k_fs_rv,
+        ) = original_heart_parameters
 
     return t, out
-
 
 def plot_calibration(t, res, save_path='calibration_figure.png'):
     panels = [
