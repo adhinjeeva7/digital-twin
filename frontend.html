@@ -10,6 +10,15 @@
     .heart  { color: #b91c1c; font-weight: bold; }
     .kidney { color: #1d4ed8; font-weight: bold; }
     .lung   { color: #047857; font-weight: bold; }
+    #verdict { margin-top: 16px; padding: 14px; border-radius: 6px; font-size: 18px; font-weight: bold; }
+    #verdict small { display: block; font-weight: normal; font-size: 14px; margin-top: 4px; }
+    .v-ok   { background: #d1fae5; color: #065f46; }
+    .v-warn { background: #fef3c7; color: #92400e; }
+    .v-bad  { background: #fee2e2; color: #991b1b; }
+    .pass { color: #047857; font-weight: bold; }
+    .fail { color: #b91c1c; font-weight: bold; }
+    td.bad-cell { background: #fecaca; outline: 2px solid #b91c1c; outline-offset: -2px; }
+    td.bad-cell::after { content: " ✗"; color: #b91c1c; }
     #pctLabel { font-size: 20px; font-weight: bold; }
     #status { font-size: 13px; color: #888; margin-top: 6px; }
     .section { margin-top: 36px; padding-top: 16px; border-top: 1px solid #ddd; }
@@ -40,12 +49,17 @@
     </tr>
   </table>
 
+  <div id="verdict"></div>
+  <table id="checks" style="display:none">
+    <tr><th>Heart check</th><th>Value</th><th>Pass if</th><th>Result</th><th>What it means</th></tr>
+  </table>
+
   <div class="section">
     <h2>1. Continuous heart strength</h2>
     <p>Drag to weaken the heart gradually — GFR, PaO2, and SaO2 respond even
        though only the heart is being changed. Uses <code>/simulate</code>.</p>
     <label>Heart stroke volume: <span id="pctLabel">100%</span> of normal</label>
-    <input type="range" id="heartSlider" min="40" max="100" step="10" value="100"
+    <input type="range" id="heartSlider" min="10" max="100" step="5" value="100"
            oninput="runSlider()">
   </div>
 
@@ -74,6 +88,47 @@
       document.getElementById("v_HR").innerText = s.HR;
       document.getElementById("v_GFR").innerText = s.GFR;
       document.getElementById("v_Vextra").innerText = s.Vextra;
+      showHeartVerdict(s);
+    }
+    const HEART_CHECKS = [
+      { name: "Blood pressure (MAP)", key: "MAP", rule: "≥ 65 mmHg", ok: v => v >= 65,
+        bad: "Pressure too low - the heart is not pushing enough blood (poor output)." },
+      { name: "Lung congestion (PCWP)", key: "PCWP", rule: "≤ 18 mmHg", ok: v => v <= 18,
+        bad: "Blood is backing up into the lungs - a classic sign of left heart failure." },
+      { name: "Venous congestion (CVP)", key: "CVP", rule: "≤ 10 mmHg", ok: v => v <= 10,
+        bad: "Blood is backing up in the veins - a sign of right heart failure / overload." },
+      { name: "Heart rate (HR)", key: "HR", rule: "50 - 100 bpm", ok: v => v >= 50 && v <= 100,
+        bad: "Heart is working too hard (or too slowly) to compensate." },
+      { name: "Kidney perfusion (GFR)", key: "GFR", rule: "≥ 60", ok: v => v >= 60,
+        bad: "Kidneys are under-perfused - a downstream effect of weak heart output." }
+    ];
+
+    function showHeartVerdict(s) {
+      const table = document.getElementById("checks");
+      table.style.display = "";
+      table.innerHTML = "<tr><th>Heart check</th><th>Value</th><th>Pass if</th><th>Result</th><th>What it means</th></tr>";
+      let fails = 0;
+      HEART_CHECKS.forEach(c => {
+        const pass = c.ok(s[c.key]);
+        if (!pass) fails++;
+        const cell = document.getElementById("v_" + c.key);
+        cell.classList.toggle("bad-cell", !pass);
+        cell.title = pass ? "" : "FAILED: " + c.bad;
+        table.innerHTML += `<tr><td>${c.name}</td><td>${s[c.key]}</td><td>${c.rule}</td>` +
+          `<td class="${pass ? "pass" : "fail"}">${pass ? "PASS" : "FAIL"}</td>` +
+          `<td style="text-align:left">${pass ? "Normal" : c.bad}</td></tr>`;
+      });
+      const v = document.getElementById("verdict");
+      if (fails === 0) {
+        v.className = "v-ok";
+        v.innerHTML = "PASS — no sign of heart failure<small>All heart checks are in the normal range.</small>";
+      } else if (fails === 1) {
+        v.className = "v-warn";
+        v.innerHTML = "WARNING — 1 check failed<small>One measure is abnormal. Possible early strain, not yet a clear heart failure pattern.</small>";
+      } else {
+        v.className = "v-bad";
+        v.innerHTML = `FAIL — heart failure pattern (${fails} of ${HEART_CHECKS.length} checks failed)<small>The heart is not keeping up with the body's demand.</small>`;
+      }
     }
 
     function clearActiveButtons() {
