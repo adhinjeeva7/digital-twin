@@ -7,10 +7,6 @@ from kidney import Kidney
 
 
 class DigitalTwin:
-    def heart_parameters_at(self, t):
-        if self.scenario == "heart_failure" and t >= self.onset_s:
-            return 38.5, 0.25, 0.25
-        return 70.0, 0.60, 0.60
     def __init__(self):
         self.heart = Heart()
         self.lung = Lung()
@@ -28,11 +24,12 @@ class DigitalTwin:
 
         self.scenario = None
         self.onset_s = 300.0
+    def heart_parameters_at(self, t):
+        if self.scenario == "heart_failure" and t >= self.onset_s:
+            return 38.5, 0.25, 0.25
 
+        return 70.0, 0.60, 0.60
     def apply_scenario(self, t):
-        if t < self.onset_s:
-            return
-
         if self.scenario == "hypoxia":
             self.fio2 = 0.10
 
@@ -44,9 +41,8 @@ class DigitalTwin:
             self.heart.sv_baseline = sv
             self.heart.k_fs_lv = k_lv
             self.heart.k_fs_rv = k_rv
-
+                                   
     def rhs(self, t, y):
-        self.apply_scenario(t)
 
         P_sa, P_sv, P_pa, P_pv, V_extra, PaO2 = y
 
@@ -103,16 +99,65 @@ class DigitalTwin:
     def run(self, t_end=1800, dt=2.0):
         times = np.arange(0, t_end + dt, dt)
 
+        def run(self, t_end=1800, dt=2.0):
+    times = np.arange(0, t_end + dt, dt)
+
+    options = {
+        "method": "RK45",
+        "rtol": 1e-6,
+        "atol": 1e-8,
+        "max_step": 5.0,
+    }
+
+    if t_end <= self.onset_s:
         return solve_ivp(
             self.rhs,
             [0, t_end],
             self.y0,
             t_eval=times,
-            method="RK45",
-            rtol=1e-6,
-            atol=1e-8,
-            max_step=5.0
+            **options,
         )
+
+    pre_times = times[times <= self.onset_s]
+    post_times = times[times >= self.onset_s]
+
+    baseline = solve_ivp(
+        self.rhs,
+        [0, self.onset_s],
+        self.y0,
+        t_eval=pre_times,
+        **options,
+    )
+
+    if not baseline.success:
+        return baseline
+
+    if self.scenario is not None:
+        self.apply_scenario()
+
+    scenario = solve_ivp(
+        self.rhs,
+        [self.onset_s, t_end],
+        baseline.y[:, -1],
+        t_eval=post_times,
+        **options,
+    )
+
+    scenario.t = np.concatenate([
+        baseline.t,
+        scenario.t[1:],
+    ])
+
+    scenario.y = np.concatenate([
+        baseline.y,
+        scenario.y[:, 1:],
+    ], axis=1)
+
+    scenario.nfev += baseline.nfev
+    scenario.success = baseline.success and scenario.success
+
+    return scenario
+
     def show_results(self, result):
         names = [
             "MAP",
