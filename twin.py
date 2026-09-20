@@ -96,7 +96,7 @@ class DigitalTwin:
             dPaO2
         ]
 
-     def run(self, t_end=1800, dt=2.0):
+    def n(self, t_end=1800, dt=2.0):
         times = np.arange(0, t_end + dt, dt)
 
         options = {
@@ -155,7 +155,7 @@ class DigitalTwin:
 
         return scenario
 
-     def show_results(self, result):
+    def show_results(self, result):
         names = [
             "MAP",
             "CVP",
