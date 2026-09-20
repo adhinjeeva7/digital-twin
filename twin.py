@@ -7,7 +7,7 @@ from kidney import Kidney
 
 
 class DigitalTwin:
-    def hear_parameters_at(self, t):
+    def heart_parameters_at(self, t):
         if self.scenario == "heart_failure" and t >= self.onset_s:
             return 38.5, 0.25, 0.25
         return 70.0, 0.60, 0.60
