@@ -1,6 +1,6 @@
 <html>
 <head>
-  <title>Cardiac Digital Twin — Live Demo</title>
+  <title>Cardiac Digital Twin — Demo</title>
   <style>
     body { font-family: sans-serif; max-width: 900px; margin: 40px auto; }
     input[type=range] { width: 100%; }
@@ -18,7 +18,7 @@
   </style>
 </head>
 <body>
-  <h1>Cardiac Digital Twin — Live Demo</h1>
+  <h1>Cardiac Digital Twin — Demo</h1>
   <div id="status">ready</div>
 
   <table>
@@ -51,7 +51,6 @@
 
   <div class="section">
     <h2>2. Named disease scenarios</h2>
-    <p>Each button runs your actual <code>scenarios.py</code>.</p>
     <button id="btn_healthy" onclick="runScenario('healthy')">Healthy</button>
     <button id="btn_hypoxia" onclick="runScenario('hypoxia')">Acute Hypoxia</button>
     <button id="btn_fluid_overload" onclick="runScenario('fluid_overload')">IV Fluid Overload</button>
@@ -85,7 +84,6 @@
       const pct = document.getElementById("heartSlider").value;
       document.getElementById("pctLabel").innerText = pct + "%";
       clearActiveButtons();
-      setStatus("running live simulation (slider, " + pct + "%)...");
 
       try {
         const res = await fetch(`${SERVER_URL}/simulate?pct=${pct}`);
@@ -104,9 +102,9 @@
       try {
         const res = await fetch(`${SERVER_URL}/scenario?name=${name}`);
         fillTable(await res.json());
-        setStatus("done - live result from /scenario");
+        setStatus("done - live result ");
       } catch (err) {
-        setStatus("could not reach server - is 'python server.py' running?");
+        setStatus("could not reach server ");
       }
     }
 
