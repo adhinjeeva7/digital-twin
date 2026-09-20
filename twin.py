@@ -40,9 +40,10 @@ class DigitalTwin:
             self.kidney.fluid_intake = 10.0
 
         elif self.scenario == "heart_failure":
-            self.heart.sv_baseline = 38.5
-            self.heart.k_fs_lv = 0.25
-            self.heart.k_fs_rv = 0.25
+            sv, k_lv, k_rv = self.hear_parameters_at(self.onset_s)
+            self.heart.sv_baseline = sv
+            self.heart.k_fs_lv = k_lv
+            self.heart.k_fs_rv = k_rv
 
     def rhs(self, t, y):
         self.apply_scenario(t)
